@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>考試智慧投影系統</title><link rel="stylesheet" href="style.css"></head>
+<body>
+  <div id="simulationBadge" hidden>模擬時間・非正式投影</div>
+  <main id="projection" class="waiting" aria-label="考試投影">
+    <header id="examHeader" hidden><span id="phaseLabel"></span><h1 id="course"></h1><span id="examType"></span></header>
+    <section id="clockSection"><div id="clockLabel" hidden>目前時間</div><div id="clock" role="timer" aria-label="目前時間">--:--:--</div></section>
+    <section id="reminderSection" hidden><h2>考試即將開始</h2><div id="countdown" role="timer"></div><ol id="reminders"></ol></section>
+    <section id="noticeSection" hidden><ol id="notices"></ol></section>
+    <section id="seatingSection" hidden><div id="paperMessage">請參閱現場紙本座位表</div><div id="pdfGrid"></div></section>
+    <section id="endedSection" hidden><h2>考試時間結束</h2><p>請停止作答</p></section>
+    <p id="noContext" hidden>目前無可識別的考試資料</p>
+  </main>
+  <button id="openControls" class="control-launch" aria-label="展開教師控制列" aria-expanded="false" aria-controls="controls">教師控制 <span>⌘</span></button>
+  <aside id="controls" hidden aria-label="教師控制列">
+    <div class="panel-head"><div><span class="eyebrow">EXAM PROJECTION</span><h2>教師控制</h2></div><button id="closeControls" aria-label="關閉教師控制列">關閉 ×</button></div>
+    <div class="mode-line"><b id="modeStatus">自動模式</b><span id="nextStatus"></span></div>
+    <div id="phaseButtons" class="phase-buttons"></div>
+    <div class="actions"><button id="nextPhase">下一階段 →</button><button id="auto" class="primary">恢復自動</button><button id="fullscreen">全螢幕</button><button id="refresh">立即同步</button></div>
+    <div class="health"><p id="sourceStatus">正在讀取資料…</p><p id="timeStatus">時間尚未校正</p><p id="pdfStatus">座位表尚未讀取</p></div>
+    <details id="sourceControls"><summary>設定 Google Sheets 公開 CSV</summary><p>先將整份試算表「發布到網路」，再貼入發布網址並按「帶入工作表」。發布內容可公開讀取；不要貼入金鑰或私人憑證。</p><label>試算表發布網址 <input id="csvShared" type="url" placeholder="https://docs.google.com/spreadsheets/d/e/.../pubhtml"></label><div class="actions"><button id="deriveCsv">帶入工作表</button></div><details><summary>查看或個別設定 CSV 網址</summary><label>01 考試清單 <input id="csvExams" type="url"></label><label>02 考試注意事項 <input id="csvNotices" type="url"></label><label>03 考前提醒 <input id="csvReminders" type="url"></label><label>04 系統設定 <input id="csvSettings" type="url"></label></details><div class="actions"><button id="saveCsv">儲存並同步</button><button id="copyCsvLink">複製含設定的投影網址</button></div><p id="csvStatus" role="status"></p></details>
+    <details id="warningsDetails"><summary>資料檢查 <span id="warningCount"></span></summary><ul id="warnings"></ul></details>
+    <details id="simulationControls"><summary>開發驗收：模擬時間</summary><p>使用獨立示例資料，所有畫面會標示「非正式投影」。不修改試算表。</p><label>台灣時間 <input id="simTime" type="datetime-local" step="1" value="2026-11-06T09:50:00"></label><div class="actions"><button id="startSimulation">啟用模擬</button><button id="stopSimulation">離開模擬</button></div><div id="boundaryButtons" class="boundary-buttons"></div><label>座位表情境 <select id="pdfScenario"><option value="paper">0 份（紙本）</option><option value="single">1 份單頁</option><option value="multi">1 份多頁</option><option value="two">2 份各多頁</option><option value="overflow">超過上限</option><option value="error">連線失敗</option></select></label></details>
+    <p class="panel-foot">台灣時間 Asia/Taipei · 按 Esc 收合 · Windows 可按 F11</p>
+  </aside>
+  <script src="core.js"></script><script src="csv-source.js"></script><script src="csv-config.js"></script><script src="app.js"></script>
+</body></html>

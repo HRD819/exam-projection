@@ -1,0 +1,5 @@
+{
+  "name": "exam-projection", "version": "1.0.0", "private": true,
+  "scripts": {"start":"node scripts/serve.cjs", "build":"node scripts/build-pages.cjs", "test":"node --test tests/core.test.cjs tests/csv-source.test.cjs", "check":"npm test && npm run build", "ci":"npm run check"},
+  "engines":{"node":">=20"}
+}
