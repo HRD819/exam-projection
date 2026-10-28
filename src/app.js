@@ -140,7 +140,7 @@
   $('copyCsvLink').onclick=async()=>{if(!S.names.every(k=>S.sourceUrl(sources[k]))){$('csvStatus').textContent='請先儲存四個公開 CSV 網址。';return;}const u=new URL(location.href);u.search='';u.searchParams.set('sources',btoa(encodeURIComponent(JSON.stringify(sources))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''));try{await navigator.clipboard.writeText(u.href);$('csvStatus').textContent='已複製投影網址；持有網址的人能取得發布的 CSV。';}catch{$('csvStatus').textContent='請手動複製以下網址： '+u.href;}};
   restoreCache();
   if(new URLSearchParams(location.search).get('demo')==='1')simulate('2026-11-06T10:10:00');
-  if(!sim&&!S.names.every(k=>S.sourceUrl(sources[k]))){openPanel(true);$('sourceControls').open=true;}
+  if(!sim&&!S.names.every(k=>S.sourceUrl(sources[k]))){openPanel(true);$('advancedControls').open=true;$('sourceControls').open=true;}
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){tick();if(Date.now()-lastSync>30000)sync();}});window.addEventListener('online',()=>sync());
   tick();setInterval(tick,1000);sync();
 })();

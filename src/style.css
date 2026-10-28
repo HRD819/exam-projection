@@ -12,3 +12,7 @@ button{border-color:#a9bfba;background:#eaf1ed;color:#203d3b}button:hover{backgr
 input,select{background:#fff;color:#203d3b;border-color:#a9bfba}
 #simulationBadge{background:#f5e4bd;color:#513814}
 .control-launch{opacity:.72}
+
+.advanced-controls{font-size:13px;color:var(--muted)}
+.advanced-controls > summary{font-size:13px;color:var(--muted)}
+.advanced-controls > details{margin-top:10px;padding:12px 0 0}
