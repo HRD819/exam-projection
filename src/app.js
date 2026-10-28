@@ -46,8 +46,7 @@
   function descriptor(e){
     if(sim){const scenario=$('pdfScenario').value;const make=(id,room,pages)=>({id,room,name:id+'.pdf',rev:scenario,size:10000,demoPages:pages});
       return scenario==='error'?{status:'error',message:'座位表連線失敗（模擬）'}:{status:'ok',files:scenario==='single'?[make('demo-one','LE205',1)]:scenario==='multi'?[make('demo-multi','LE205',3)]:scenario==='two'?[make('demo-multi','LE205',3),make('demo-second','LE206',2)]:scenario==='overflow'?[make('a','A',1),make('b','B',1),make('c','C',1)]:[]};}
-    if(seatIndex){const files=SeatIndex.match(e,seatIndex);if(new Set(files.map(f=>f.room.toUpperCase())).size!==files.length)return {status:'error',message:'同一教室有多張座位表，請檢查檔名'};return {status:'ok',files};}
-    const manual=data.seats?.[e.id];return manual?.files?.length?manual:{status:'error',message:'座位表清單讀取失敗，請使用紙本'};
+    return SeatIndex.select(e,data.seats?.[e.id],seatIndex);
   }
   async function library(){
     if(!pdfModule){const base='./vendor/pdfjs/';pdfModule=import(base+'build/pdf.mjs').then(lib=>{lib.GlobalWorkerOptions.workerSrc=base+'build/pdf.worker.mjs';return lib;}).catch(e=>{pdfModule=null;throw e;});}return pdfModule;
