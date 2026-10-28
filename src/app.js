@@ -70,10 +70,19 @@
     if(plan.kind!=='pdf'){pdfText=plan.kind==='paper'?'使用紙本座位表（已成功查詢，0 份 PDF）':plan.message;return;}
     pdfText='正在預載座位表…';
     pdfPromise=(async()=>{
-      const lib=await library(),cards=[];let count=0;
+      const cards=[];let count=0,hasDriveImage=false;
       for(const f of plan.files){
+        const imageUrl=!sim&&S.driveImage(f.url);
+        if(imageUrl){
+          const card=document.createElement('article');card.className='pdf-file';
+          const title=document.createElement('h2');title.textContent=f.room;card.append(title);
+          const area=document.createElement('div');area.className='pdf-pages';
+          const image=document.createElement('img');image.alt=f.room+' 座位表';
+          await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Google Drive 圖片載入逾時')),25000);image.onload=()=>{clearTimeout(timer);resolve();};image.onerror=()=>{clearTimeout(timer);reject(Error('Google Drive 圖片載入失敗，請檢查分享權限'));};image.src=imageUrl;});
+          area.append(image);card.append(area);cards.push(card);count++;hasDriveImage=true;continue;
+        }
         if(f.size>12*1024*1024)throw new Error('PDF 超過 12 MB 性能上限');
-        const doc=await lib.getDocument({data:await bytes(e,f),isEvalSupported:false,useSystemFonts:true,stopAtErrors:true,cMapUrl:'./vendor/pdfjs/cmaps/',cMapPacked:true,standardFontDataUrl:'./vendor/pdfjs/standard_fonts/',wasmUrl:'./vendor/pdfjs/wasm/'}).promise;
+        const lib=await library();const doc=await lib.getDocument({data:await bytes(e,f),isEvalSupported:false,useSystemFonts:true,stopAtErrors:true,cMapUrl:'./vendor/pdfjs/cmaps/',cMapPacked:true,standardFontDataUrl:'./vendor/pdfjs/standard_fonts/',wasmUrl:'./vendor/pdfjs/wasm/'}).promise;
         try {
           if(plan.allPages&&doc.numPages>12)throw new Error('單份 PDF 超過 12 頁；請先精簡或使用紙本（不省略頁面）');
           const pages=plan.allPages?doc.numPages:1,card=document.createElement('article');card.className='pdf-file';
@@ -88,7 +97,7 @@
       }
       if(token!==pdfToken)return;
       $('pdfGrid').style.setProperty('--files',plan.files.length);$('pdfGrid').replaceChildren(...cards);$('paperMessage').hidden=true;
-      pdfText='已預載 '+plan.files.length+' 份 PDF／顯示 '+count+' 頁（僅本次頁面記憶體快取）';
+      pdfText='已載入 '+plan.files.length+' 份座位表／顯示 '+count+' 頁'+(hasDriveImage?'（Google Drive 圖片；請確認清晰度）':'（僅本次頁面記憶體快取）');
     })().catch(error=>{if(token!==pdfToken)return;pdfText='PDF 載入失敗：'+error.message;pdfRetryAt=Date.now()+60000;$('pdfGrid').replaceChildren();$('paperMessage').hidden=false;});
     await pdfPromise;
   }

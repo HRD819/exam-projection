@@ -21,6 +21,7 @@ var CsvSource = (function(){
   function date(value){const m=String(value).trim().match(/^(\d{2}|\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);if(!m)return '';let y=Number(m[1]);if(m[1].length===2)y+=2000;const out=String(y)+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');const n=Date.parse(out+'T00:00:00+08:00');return Number.isFinite(n)&&new Date(n+8*3600000).toISOString().slice(0,10)===out?out:'';}
   function time(value){const m=String(value).trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);if(!m||+m[1]>23||+m[2]>59||(m[3]&&+m[3]!==0))return '';return m[1].padStart(2,'0')+':'+m[2];}
   function link(value){if(!value)return '';try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password?u.href:'';}catch{return '';}}
+  function driveImage(value){try{const u=new URL(value);if(u.protocol!=='https:'||u.hostname!=='drive.google.com'||u.username||u.password)return '';const m=u.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]+)(?:\/(?:view|preview))?\/?$/);if(!m)return '';return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(m[1])+'&sz=w2000';}catch{return '';}}
   function room(url,index){try{const name=decodeURIComponent(new URL(url).pathname.split('/').pop()),m=name.match(/_([^_\/]+)\.pdf$/i);return m?m[1]:'座位表 '+(index+1);}catch{return '座位表 '+(index+1);}}
   function decode(tables){
     const fields=['考試ID','學期','考試類型','考試科目','考試日期','開始時間','結束時間','考前提醒版本','考試注意事項版本','座位表 PDF 連結1','座位表 PDF 連結2'];
@@ -35,6 +36,6 @@ var CsvSource = (function(){
   function sourceUrl(value){try{const u=new URL(value),allowed=new Set(['gid','single','output']);return u.protocol==='https:'&&u.hostname==='docs.google.com'&&/^\/spreadsheets\/d\/e\/[^/]+\/pub$/.test(u.pathname)&&u.searchParams.get('output')==='csv'&&[...u.searchParams.keys()].every(k=>allowed.has(k))&&!u.username&&!u.password?u.href:'';}catch{return '';}}
   function derive(value){const u=new URL(value);if(u.protocol!=='https:'||u.hostname!=='docs.google.com'||!/^\/spreadsheets\/d\/e\/[^/]+\/pub(?:html)?$/.test(u.pathname)||u.username||u.password)throw Error('請貼上試算表「發布到網路」取得的網址');u.pathname=u.pathname.replace(/pubhtml$/,'pub');u.search='';return Object.fromEntries(names.map((name,i)=>{const v=new URL(u.href);v.searchParams.set('gid',String(101+i));v.searchParams.set('single','true');v.searchParams.set('output','csv');return [name,v.href];}));}
   async function load(sources,fetcher=fetch){const out={};await Promise.all(names.map(async name=>{const url=sourceUrl(sources?.[name]);if(!url)throw Error('請設定有效的已發布 Google Sheets CSV：'+name);const response=await fetcher(url,{cache:'no-store',signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('CSV 讀取失敗：'+name+'（'+response.status+'）');out[name]=await response.text();}));return decode(out);}
-  return {names,required,parse,objects,date,time,link,room,decode,sourceUrl,derive,load};
+  return {names,required,parse,objects,date,time,link,driveImage,room,decode,sourceUrl,derive,load};
 })();
 if(typeof module!=='undefined')module.exports=CsvSource;
