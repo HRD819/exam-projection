@@ -2,7 +2,7 @@
 var CsvSource = (function(){
   'use strict';
   const names=['exams','notices','reminders','settings'];
-  const required={exams:['考試ID','學期','考試類型','考試科目','考試日期','開始時間','結束時間','考前提醒版本','考試注意事項版本','啟用','座位表 PDF 連結1','座位表 PDF 連結2'],notices:['版本代碼','版本名稱','順序','提醒內容'],reminders:['版本代碼','版本名稱','順序','提醒內容'],settings:['設定項目','設定值']};
+  const required={exams:['考試ID','學期','考試類型','考試科目','考試日期','開始時間','結束時間','考前提醒版本','考試注意事項版本','啟用','座位表 JPG 連結1','座位表 JPG 連結2'],notices:['版本代碼','版本名稱','順序','提醒內容'],reminders:['版本代碼','版本名稱','順序','提醒內容'],settings:['設定項目','設定值']};
   function parse(text){
     if(typeof text!=='string')throw Error('CSV 必須是文字');if(/^\s*</.test(text))throw Error('收到 HTML，請確認工作表已發布為 CSV');
     text=text.replace(/^\uFEFF/,'');const rows=[];let row=[],field='',quoted=false,closed=false;
@@ -15,7 +15,7 @@ var CsvSource = (function(){
     }
     if(quoted)throw Error('CSV 引號未關閉');if(row.length||field||closed){row.push(field);rows.push(row);}return rows;
   }
-  function objects(text,kind){const rows=parse(text),header=rows.shift();if(!header)throw Error(kind+' 沒有標題列');const seen=new Set();for(const h of header){const k=h.trim();if(k&&seen.has(k))throw Error(kind+' 欄名重複：'+k);seen.add(k);}for(const h of required[kind])if(!seen.has(h))throw Error(kind+' 缺少欄位：'+h);
+  function objects(text,kind){const rows=parse(text),rawHeader=rows.shift(),header=rawHeader?.map(h=>kind==='exams'?h.replace(/^座位表 PDF 連結([12])$/,'座位表 JPG 連結$1'):h);if(!header)throw Error(kind+' 沒有標題列');const seen=new Set();for(const h of header){const k=h.trim();if(k&&seen.has(k))throw Error(kind+' 欄名重複：'+k);seen.add(k);}for(const h of required[kind])if(!seen.has(h))throw Error(kind+' 缺少欄位：'+h);
     return rows.filter(row=>row.some(v=>v.trim())).map(row=>Object.fromEntries(header.map((key,i)=>[key.trim(),(row[i]||'').trim()])));
   }
   function date(value){const m=String(value).trim().match(/^(\d{2}|\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);if(!m)return '';let y=Number(m[1]);if(m[1].length===2)y+=2000;const out=String(y)+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');const n=Date.parse(out+'T00:00:00+08:00');return Number.isFinite(n)&&new Date(n+8*3600000).toISOString().slice(0,10)===out?out:'';}
@@ -24,8 +24,8 @@ var CsvSource = (function(){
   function driveImage(value){try{const u=new URL(value);if(u.protocol!=='https:'||u.hostname!=='drive.google.com'||u.username||u.password)return '';const m=u.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]+)(?:\/(?:view|preview))?\/?$/);if(!m)return '';return 'https://drive.google.com/thumbnail?id='+encodeURIComponent(m[1])+'&sz=w2000';}catch{return '';}}
   function room(url,index){try{const name=decodeURIComponent(new URL(url).pathname.split('/').pop()),m=name.match(/_([^_\/]+)\.pdf$/i);return m?m[1]:'座位表 '+(index+1);}catch{return '座位表 '+(index+1);}}
   function decode(tables){
-    const fields=['考試ID','學期','考試類型','考試科目','考試日期','開始時間','結束時間','考前提醒版本','考試注意事項版本','座位表 PDF 連結1','座位表 PDF 連結2'];
-    const exams=objects(tables.exams,'exams').filter(r=>fields.some(k=>r[k])||r['啟用'].toUpperCase()==='TRUE').map(r=>({id:r['考試ID'],semester:r['學期'],type:r['考試類型'],course:r['考試科目'],date:date(r['考試日期']),start:time(r['開始時間']),end:time(r['結束時間']),reminder:r['考前提醒版本'],noticeVersion:r['考試注意事項版本'],enabled:r['啟用'].toUpperCase()==='TRUE',pdfUrls:[r['座位表 PDF 連結1'],r['座位表 PDF 連結2']]}));
+    const fields=['考試ID','學期','考試類型','考試科目','考試日期','開始時間','結束時間','考前提醒版本','考試注意事項版本','座位表 JPG 連結1','座位表 JPG 連結2'];
+    const exams=objects(tables.exams,'exams').filter(r=>fields.some(k=>r[k])||r['啟用'].toUpperCase()==='TRUE').map(r=>({id:r['考試ID'],semester:r['學期'],type:r['考試類型'],course:r['考試科目'],date:date(r['考試日期']),start:time(r['開始時間']),end:time(r['結束時間']),reminder:r['考前提醒版本'],noticeVersion:r['考試注意事項版本'],enabled:r['啟用'].toUpperCase()==='TRUE',pdfUrls:[r['座位表 JPG 連結1'],r['座位表 JPG 連結2']]}));
     const map=r=>({version:r['版本代碼'],name:r['版本名稱'],order:Number(r['順序']),text:r['提醒內容']});
     const notices=objects(tables.notices,'notices').map(map),reminders=objects(tables.reminders,'reminders').map(map);
     const settingsRows=objects(tables.settings,'settings'),d=Object.fromEntries(settingsRows.map(r=>[r['設定項目'],r['設定值']]));

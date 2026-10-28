@@ -22,3 +22,5 @@ test('Google Drive image links use the thumbnail endpoint safely',()=>{
   assert.equal(S.driveImage('https://drive.google.com/drive/folders/abc_123'),'');
   assert.equal(S.driveImage('https://drive.google.com.evil.test/file/d/abc/view'),'');
 });
+
+test('old PDF and new JPG headers decode identically',()=>{const csv=fixtures.exams.replaceAll('座位表 PDF 連結','座位表 JPG 連結');assert.deepEqual(S.decode({...fixtures,exams:csv}),S.decode(fixtures));});
