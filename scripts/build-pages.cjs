@@ -1,6 +1,6 @@
 const fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'..'),out=path.join(root,'dist');fs.mkdirSync(out,{recursive:true});
-for(const file of ['index.html','style.css','core.js','csv-source.js','seat-index.js','csv-config.js','app.js'])fs.copyFileSync(path.join(root,'src',file),path.join(out,file));
+for(const file of ['index.html','favicon.png','style.css','core.js','csv-source.js','seat-index.js','csv-config.js','app.js'])fs.copyFileSync(path.join(root,'src',file),path.join(out,file));
 const dependency=process.env.PDFJS_DIR||path.join(process.env.USERPROFILE||'', '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/pdfjs-dist');
 const vendored=path.join(root,'vendor','pdfjs');const source=fs.existsSync(path.join(vendored,'build','pdf.mjs'))?vendored:dependency;
 if(!fs.existsSync(path.join(source,'build','pdf.mjs')))throw Error('找不到 PDF.js；請設定 PDFJS_DIR 或使用 vendor/pdfjs');
