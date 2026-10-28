@@ -5,12 +5,14 @@
   try {const query=new URLSearchParams(location.search).get('sources');if(query){const raw=decodeURIComponent(atob(query.replace(/-/g,'+').replace(/_/g,'/')));const x=JSON.parse(raw);if(S.names.every(k=>S.sourceUrl(x[k])))sources=x;}else{const x=JSON.parse(localStorage.getItem(configKey)||'null');if(x&&S.names.every(k=>S.sourceUrl(x[k])))sources=x;}}catch{}
   const cacheKey=()=> 'exam-projection-csv-cache-v1:'+JSON.stringify(sources);
   let data=C.validate({exams:[],notices:[],reminders:[]}),liveData=data,override=null,sim=null,offset=0,lastSync=0,lastCalibration=0;
+  let seatIndex=null,seatIndexError='座位表清單尚未讀取';
+  try{seatIndex=SeatIndex.validate(JSON.parse(localStorage.getItem('seat-index-v1')||'null'));seatIndexError='使用座位表清單快取';}catch{}
   let pdfKey='',pdfPromise=null,pdfToken=0,pdfModule=null,pdfWorkerUrl=null,pdfMemory=new Map(),renderedKey='',currentView=null,syncing=false;
   let calibrationText='時間未校正：使用裝置時間',pdfText='座位表尚未讀取',syncText='正在讀取資料…',lastBeep='',refreshTimer=null,pdfRetryAt=0;
   const now=()=>sim?sim.time+(sim.running?Date.now()-sim.anchor:0):Date.now()+offset;
   function demo(){return C.validate({settings:C.DEFAULTS,exams:[{id:'E0001',semester:'1151',type:'期中考',course:'資訊組織',date:'2026-11-06',start:'10:10',end:'12:00',reminder:'DEMO',noticeVersion:'NOTICE_DEMO',enabled:true}],notices:[{version:'NOTICE_DEMO',order:1,text:'請保持安靜，獨立作答（模擬示例）'},{version:'NOTICE_DEMO',order:2,text:'如有問題請舉手（模擬示例）'}],reminders:[{version:'DEMO',order:1,text:'請將課本、講義及筆記收妥（模擬示例）'},{version:'DEMO',order:2,text:'請將手機關機（模擬示例）'}],seats:{}});}
   function list(el,items){el.replaceChildren(...items.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));}
-  function warningItems(){const result=(data.warnings||[]).slice();if(currentView?.conflict)result.unshift('同時有多場考試符合：保持等待畫面，請修正排程。');if(pdfText.includes('失敗')||pdfText.includes('上限')||pdfText.includes('快取'))result.push(pdfText);return result;}
+  function warningItems(){const result=(data.warnings||[]).slice();if(currentView?.conflict)result.unshift('同時有多場考試符合：保持等待畫面，請修正排程。');if(pdfText.includes('失敗')||pdfText.includes('上限')||pdfText.includes('快取'))result.push(pdfText);if(seatIndexError)result.push(seatIndexError);return result;}
   function tick(){
     const t=now(),v=C.view(data,t,override);if(!v.manual)override=null;
     currentView=v;
@@ -44,7 +46,8 @@
   function descriptor(e){
     if(sim){const scenario=$('pdfScenario').value;const make=(id,room,pages)=>({id,room,name:id+'.pdf',rev:scenario,size:10000,demoPages:pages});
       return scenario==='error'?{status:'error',message:'座位表連線失敗（模擬）'}:{status:'ok',files:scenario==='single'?[make('demo-one','LE205',1)]:scenario==='multi'?[make('demo-multi','LE205',3)]:scenario==='two'?[make('demo-multi','LE205',3),make('demo-second','LE206',2)]:scenario==='overflow'?[make('a','A',1),make('b','B',1),make('c','C',1)]:[]};}
-    return data.seats?.[e.id]||{status:'error',message:'座位表資料尚未讀取'};
+    if(seatIndex){const files=SeatIndex.match(e,seatIndex);if(new Set(files.map(f=>f.room.toUpperCase())).size!==files.length)return {status:'error',message:'同一教室有多張座位表，請檢查檔名'};return {status:'ok',files};}
+    const manual=data.seats?.[e.id];return manual?.files?.length?manual:{status:'error',message:'座位表清單讀取失敗，請使用紙本'};
   }
   async function library(){
     if(!pdfModule){const base='./vendor/pdfjs/';pdfModule=import(base+'build/pdf.mjs').then(lib=>{lib.GlobalWorkerOptions.workerSrc=base+'build/pdf.worker.mjs';return lib;}).catch(e=>{pdfModule=null;throw e;});}return pdfModule;
@@ -103,6 +106,7 @@
   }
   async function sync(){
     if(syncing)return;clearTimeout(refreshTimer);syncing=true;const sent=Date.now();$('refresh').disabled=true;
+    try{const response=await fetch('./seat-index.json',{cache:'no-store',signal:AbortSignal.timeout(20000)});if(!response.ok)throw Error('HTTP '+response.status);const next=SeatIndex.validate(await response.json());seatIndex=next;seatIndexError=Date.now()-Date.parse(next.generatedAt)>3600000?'座位表清單超過 1 小時未更新；請確認發布狀態':'';try{localStorage.setItem('seat-index-v1',JSON.stringify(next));}catch{} }catch(error){seatIndexError=seatIndex?'座位表清單同步失敗，使用快取（請確認清單更新時間）':'座位表清單讀取失敗；可用手動連結或紙本';}
     try{const r=await S.load(sources);
       if(!Array.isArray(r.exams)||!Array.isArray(r.notices)||!Array.isArray(r.reminders))throw new Error('資料格式無效');
       liveData=C.validate(r);lastSync=Date.now();if(!sim)data=liveData;
